@@ -8,7 +8,6 @@ uvicorn[standard]==0.24.0
 python-telegram-bot==20.7
 
 # Image Processing
-opencv-python==4.8.1.78
 opencv-python-headless==4.8.1.78
 Pillow==10.1.0
 numpy==1.26.2
