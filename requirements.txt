@@ -1,7 +1,7 @@
 fastapi==0.104.1
 uvicorn==0.24.0
 python-telegram-bot==20.7
-opencv-python-headless==4.10.1.26
+opencv-python-headless==4.10.0.84
 Pillow==11.0.0
 python-multipart==0.0.6
 slowapi==0.1.9
