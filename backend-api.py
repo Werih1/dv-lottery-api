@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 import cv2
 import numpy as np
-from PIL import Image, ExifTags
+import cv2
 import io
 import base64
 from datetime import datetime, timedelta
