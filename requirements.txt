@@ -1,9 +1,9 @@
-fastapi==0.104.1
+fastapi==0.103.1
 uvicorn==0.24.0
-python-telegram-bot==20.7
-opencv-python-headless==4.10.0.84
-Pillow==11.0.0
-python-multipart==0.0.6
+python-telegram-bot==20.5
+opencv-python-headless==4.8.1.78
+Pillow==10.0.0
+python-multipart==0.0.5
 slowapi==0.1.9
 python-dotenv==1.0.0
-pydantic==2.5.3
+
