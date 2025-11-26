@@ -10,7 +10,6 @@ python-telegram-bot==20.7
 # Image Processing
 opencv-python-headless==4.8.1.78
 numpy==1.26.2
-Pillow==8.4.0
 
 # File handling
 python-multipart==0.0.6
