@@ -37,15 +37,35 @@ def is_admin_user(telegram_id: str) -> bool:
         return False
 
 def get_user_attempts(telegram_id: str) -> int:
-    """Get attempts for user - check admin list first"""
+    """Get attempts for user - check subscriptions first"""
+    # Check if user has active subscription with unlimited checks
+    subscription = get_user_subscription(telegram_id)
+    
+    if subscription:
+        tariff, checks_limit, checks_remaining, expires_at = subscription
+        
+        # Check if expired
+        if expires_at:
+            if datetime.fromisoformat(expires_at) < datetime.now():
+                # Subscription expired, return default attempts
+                return get_user(telegram_id) if get_user(telegram_id) else 3
+            else:
+                # Subscription active and not expired
+                return checks_remaining if checks_remaining > 0 else 0
+        else:
+            # No expiry (LITE plan - permanent)
+            return checks_remaining
+    
     # Check if admin
     if is_admin_user(telegram_id):
         return 999  # Unlimited attempts
-    # Otherwise get from database
+    
+    # Get default attempts
     user = get_user(telegram_id)
     if user is None:
-        return 3  # Default attempts for new users
-    return user[1]
+        return 3  # Default for new users
+    return user
+
 
 # ============ END ADMIN CONFIGURATION ============
 
