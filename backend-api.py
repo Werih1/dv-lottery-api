@@ -796,3 +796,99 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    # ============ SUBSCRIPTIONS INTEGRATION ============
+
+def get_user_subscription(telegram_id: str):
+    """Get user's active subscription"""
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("""
+        SELECT tariff, checks_limit, checks_remaining, expires_at 
+        FROM subscriptions 
+        WHERE telegram_id = ? AND status = 'active'
+        ORDER BY purchased_at DESC LIMIT 1
+    """, (telegram_id,))
+    subscription = c.fetchone()
+    conn.close()
+    return subscription
+
+def update_user_subscription(telegram_id: str, tariff: str, checks_limit: int, 
+                            checks_remaining: int, expires_at: Optional[str] = None):
+    """Update subscription after purchase from Bot"""
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    
+    # Record subscription
+    c.execute("""
+        INSERT INTO subscriptions (telegram_id, tariff, checks_limit, checks_remaining, expires_at, status)
+        VALUES (?, ?, ?, ?, ?, 'active')
+    """, (telegram_id, tariff, checks_limit, checks_remaining, expires_at))
+    
+    # Update user's check attempts
+    user = get_user(telegram_id)
+    if user:
+        c.execute("UPDATE users SET attempts = ? WHERE telegram_id = ?", 
+                 (checks_remaining, telegram_id))
+    else:
+        c.execute("INSERT INTO users (telegram_id, attempts) VALUES (?, ?)",
+                 (telegram_id, checks_remaining))
+    
+    conn.commit()
+    conn.close()
+
+# ============ NEW API ENDPOINT ============
+
+@app.post("/api/user/{telegram_id}/subscription")
+async def activate_subscription(telegram_id: str, request_data: dict):
+    """
+    Called by Node.js backend after successful Telegram Stars payment
+    """
+    try:
+        tariff = request_data.get('tariff')
+        checks_limit = request_data.get('checks_limit')
+        checks_remaining = request_data.get('checks_remaining')
+        expires_at = request_data.get('expires_at')
+        
+        # Update subscription
+        update_user_subscription(telegram_id, tariff, checks_limit, 
+                               checks_remaining, expires_at)
+        
+        return {
+            "success": True,
+            "message": f"Subscription {tariff} activated",
+            "data": {
+                "tariff": tariff,
+                "checks_remaining": checks_remaining,
+                "expires_at": expires_at
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/user/{telegram_id}/subscription")
+async def get_subscription_info(telegram_id: str):
+    """Get user's subscription info"""
+    try:
+        subscription = get_user_subscription(telegram_id)
+        
+        if not subscription:
+            return {
+                "success": True,
+                "data": None,
+                "message": "No active subscription"
+            }
+        
+        tariff, checks_limit, checks_remaining, expires_at = subscription
+        
+        return {
+            "success": True,
+            "data": {
+                "tariff": tariff,
+                "checks_limit": checks_limit,
+                "checks_remaining": checks_remaining,
+                "expires_at": expires_at
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
